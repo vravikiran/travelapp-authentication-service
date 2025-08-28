@@ -1,22 +1,9 @@
 package com.localapp.auth.login.dto;
 
+import lombok.Data;
+
+@Data
 public class AuthRequest {
-	private long mobileno;
+	private long mobileNo;
 	private String otp;
-
-	public long getMobileno() {
-		return mobileno;
-	}
-
-	public void setMobileno(long mobileno) {
-		this.mobileno = mobileno;
-	}
-
-	public String getOtp() {
-		return otp;
-	}
-
-	public void setOtp(String otp) {
-		this.otp = otp;
-	}
 }

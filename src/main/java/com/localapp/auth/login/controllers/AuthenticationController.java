@@ -2,6 +2,10 @@ package com.localapp.auth.login.controllers;
 
 import java.io.UnsupportedEncodingException;
 
+import com.localapp.auth.login.entities.UserProfile;
+import com.localapp.auth.login.services.TokenService;
+import com.localapp.auth.login.services.UserProfileService;
+import com.nimbusds.jose.JOSEException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,53 +19,49 @@ import org.springframework.web.bind.annotation.RestController;
 import com.localapp.auth.login.dto.AuthRequest;
 import com.localapp.auth.login.dto.EmailAuthRequest;
 import com.localapp.auth.login.services.MessageService;
-import com.localapp.auth.login.services.TravelAgentProfileService;
-import com.localapp.auth.login.util.JwtHelper;
 
 import jakarta.mail.MessagingException;
 
 @RestController
 @RequestMapping("/auth")
 public class AuthenticationController {
-	@Autowired
-	TravelAgentProfileService agentProfileService;
-	@Autowired
-	MessageService messageService;
-	@Autowired
-	JwtHelper jwtHelper;
 
-	@GetMapping("/mobileotp")
-	public ResponseEntity<String> generateMobileOtp(@RequestParam long mobileno) {
-		messageService.generateMobileOtp(mobileno);
-		return ResponseEntity.ok("otp generated successfully");
-	}
+    @Autowired
+    MessageService messageService;
+    UserProfileService userProfileService;
 
-	@GetMapping("/emailotp")
-	public ResponseEntity<String> generateEmailOtp(@RequestParam String email)
-			throws UnsupportedEncodingException, MessagingException {
-		messageService.generateEmailOtp(email);
-		return ResponseEntity.ok("otp sent to email successfully");
-	}
+    @GetMapping("/mobile/otp")
+    public ResponseEntity<String> generateMobileOtp(@RequestParam long mobileNo) {
+        messageService.generateMobileOtp(mobileNo);
+        return ResponseEntity.ok("otp generated successfully");
+    }
 
-	@PostMapping("/verify/mobileotp")
-	public ResponseEntity<String> validateMobileOtp(@RequestBody AuthRequest authRequest) {
-		boolean isValidOtp = messageService.validateMobileOtp(authRequest);
-		String token = "";
-		if (isValidOtp) {
-			token = jwtHelper.generateTokenByMobileNo(Long.toString(authRequest.getMobileno()));
-			return ResponseEntity.ok(token);
-		} else
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid otp");
-	}
+    @GetMapping("/email/otp")
+    public ResponseEntity<String> generateEmailOtp(@RequestParam String email)
+            throws UnsupportedEncodingException, MessagingException {
+        messageService.generateEmailOtp(email);
+        return ResponseEntity.ok("otp sent to email successfully");
+    }
 
-	@PostMapping("/verify/emailotp")
-	public ResponseEntity<String> validateEmailOtp(@RequestBody EmailAuthRequest authRequest) {
-		boolean isValidOtp = messageService.validateEmailOtp(authRequest);
-		String token = "";
-		if (isValidOtp) {
-			token = jwtHelper.generateTokenByEmail(authRequest.getEmail());
-			return ResponseEntity.ok(token);
-		} else
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid otp");
-	}
+    @PostMapping("/verify/mobile/otp")
+    public ResponseEntity<String> validateMobileOtp(@RequestBody AuthRequest authRequest) throws JOSEException {
+        boolean isValidOtp = messageService.validateMobileOtp(authRequest);
+        UserProfile userProfile = userProfileService.getUserProfileByMobileNo(authRequest.getMobileNo());
+        if (isValidOtp) {
+            String token = TokenService.generateToken(Long.toString(authRequest.getMobileNo()),userProfile,"mobileNo");
+            return ResponseEntity.ok(token);
+        } else
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid otp");
+    }
+
+    @PostMapping("/verify/email/otp")
+    public ResponseEntity<String> validateEmailOtp(@RequestBody EmailAuthRequest authRequest) throws JOSEException {
+        boolean isValidOtp = messageService.validateEmailOtp(authRequest);
+        if (isValidOtp) {
+            UserProfile userProfile = userProfileService.getUserByEmail(authRequest.getEmail());
+            String token = TokenService.generateToken(authRequest.getEmail(),userProfile,"email");
+            return ResponseEntity.ok(token);
+        } else
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid otp");
+    }
 }
