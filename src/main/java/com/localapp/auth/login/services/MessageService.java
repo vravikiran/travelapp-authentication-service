@@ -36,7 +36,8 @@ public class MessageService {
 		String generatedOtp = getRandomOtp();
 		 PhoneNumber to = new PhoneNumber("+91" + mobileNo);
 		String otpMessage = "Please find the OTP to login into Travel With Locals App: " + generatedOtp;
-		 Message.creator(to, twilioConfig.getServiceId(), otpMessage).create();
+         System.out.println(otpMessage);
+        //Message.creator(to, twilioConfig.getServiceId(), otpMessage).create();
 		 logger.info("otp generated successfully for given mobile number :: {}" ,
 		 mobileNo);
 

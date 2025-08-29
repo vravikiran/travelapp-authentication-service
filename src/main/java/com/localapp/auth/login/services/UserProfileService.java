@@ -1,5 +1,6 @@
 package com.localapp.auth.login.services;
 
+import com.localapp.auth.login.exceptions.UserNotFoundException;
 import com.localapp.auth.login.util.HashGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -14,20 +15,30 @@ import com.localapp.auth.login.util.DateConverter;
 
 @Service
 public class UserProfileService {
-	@Autowired
-	UserProfileRepository userProfileRepository;
+    @Autowired
+    UserProfileRepository userProfileRepository;
 
-	public void saveUserProfile(UserProfileDto userProfileDto) {
-		UserProfile userProfile = convertUserProfileDtoToObj(userProfileDto);
-		userProfileRepository.save(userProfile);
-	}
-
-    public UserProfile getUserProfileByMobileNo(long mobileNo) {
-        return userProfileRepository.getReferenceById(HashGenerator.generateHashValueForMobileNo(mobileNo));
+    public void saveUserProfile(UserProfileDto userProfileDto) {
+        UserProfile userProfile = convertUserProfileDtoToObj(userProfileDto);
+        userProfileRepository.save(userProfile);
     }
 
-    public UserProfile getUserByEmail(String email) {
-        return userProfileRepository.findByEmail(HashGenerator.generateHashValueForEmail(email));
+    public UserProfile getUserProfileByMobileNo(long mobileNo) throws UserNotFoundException {
+        String mobileHashValue = HashGenerator.generateHashValueForMobileNo(mobileNo);
+        if (userProfileRepository.existsById(mobileHashValue)) {
+            return userProfileRepository.getReferenceById(mobileHashValue);
+    } else {
+        throw new UserNotFoundException("User with given mobile number "+mobileNo+" doesn't exist");
+    }
+}
+
+    public UserProfile getUserByEmail(String email) throws UserNotFoundException {
+        String emailHashValue = HashGenerator.generateHashValueForEmail(email);
+        if(userProfileRepository.findByEmail(emailHashValue) !=null) {
+            return userProfileRepository.findByEmail(HashGenerator.generateHashValueForEmail(email));
+        } else {
+            throw new UserNotFoundException("User with given email "+email+" doesn't exist");
+        }
     }
 
 	private UserProfile convertUserProfileDtoToObj(UserProfileDto userProfileDto) {

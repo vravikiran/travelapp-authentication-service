@@ -3,6 +3,7 @@ package com.localapp.auth.login.controllers;
 import java.io.UnsupportedEncodingException;
 
 import com.localapp.auth.login.entities.UserProfile;
+import com.localapp.auth.login.exceptions.UserNotFoundException;
 import com.localapp.auth.login.services.TokenService;
 import com.localapp.auth.login.services.UserProfileService;
 import com.nimbusds.jose.JOSEException;
@@ -28,6 +29,7 @@ public class AuthenticationController {
 
     @Autowired
     MessageService messageService;
+    @Autowired
     UserProfileService userProfileService;
 
     @GetMapping("/mobile/otp")
@@ -44,10 +46,10 @@ public class AuthenticationController {
     }
 
     @PostMapping("/verify/mobile/otp")
-    public ResponseEntity<String> validateMobileOtp(@RequestBody AuthRequest authRequest) throws JOSEException {
+    public ResponseEntity<String> validateMobileOtp(@RequestBody AuthRequest authRequest) throws JOSEException, UserNotFoundException {
         boolean isValidOtp = messageService.validateMobileOtp(authRequest);
-        UserProfile userProfile = userProfileService.getUserProfileByMobileNo(authRequest.getMobileNo());
         if (isValidOtp) {
+            UserProfile userProfile = userProfileService.getUserProfileByMobileNo(authRequest.getMobileNo());
             String token = TokenService.generateToken(Long.toString(authRequest.getMobileNo()),userProfile,"mobileNo");
             return ResponseEntity.ok(token);
         } else
@@ -55,7 +57,7 @@ public class AuthenticationController {
     }
 
     @PostMapping("/verify/email/otp")
-    public ResponseEntity<String> validateEmailOtp(@RequestBody EmailAuthRequest authRequest) throws JOSEException {
+    public ResponseEntity<String> validateEmailOtp(@RequestBody EmailAuthRequest authRequest) throws JOSEException, UserNotFoundException {
         boolean isValidOtp = messageService.validateEmailOtp(authRequest);
         if (isValidOtp) {
             UserProfile userProfile = userProfileService.getUserByEmail(authRequest.getEmail());
